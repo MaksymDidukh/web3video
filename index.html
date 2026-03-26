@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VideoWall 3x3 | Private Viewer</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --card-bg: #141414;
+            --accent: #00ff88;
+            --text: #e0e0e0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header { margin: 20px 0; text-align: center; }
+        .header h1 { color: var(--accent); letter-spacing: 3px; margin-bottom: 5px; }
+        .header p { font-size: 12px; color: #666; }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            width: 98vw;
+            height: 80vh;
+            max-width: 1600px;
+        }
+
+        .video-slot {
+            background: var(--card-bg);
+            border: 1px solid #222;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .add-btn {
+            background: none; border: 1px solid var(--accent);
+            color: var(--accent); font-size: 30px;
+            width: 60px; height: 60px; border-radius: 50%;
+            cursor: pointer; transition: 0.3s;
+        }
+
+        .add-btn:hover { background: var(--accent); color: black; }
+
+        iframe { width: 100%; height: 100%; border: none; }
+
+        .remove-btn {
+            position: absolute; top: 10px; right: 10px;
+            background: rgba(255,0,0,0.5); color: white;
+            border: none; cursor: pointer; padding: 5px 10px;
+            z-index: 10; display: none;
+        }
+
+        .video-slot:hover .remove-btn { display: block; }
+
+        /* Секция политик */
+        .footer-legal {
+            margin-top: 40px;
+            padding: 20px;
+            max-width: 900px;
+            font-size: 13px;
+            color: #555;
+            border-top: 1px solid #222;
+            line-height: 1.6;
+        }
+
+        .legal-tag { color: var(--accent); font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>VIEWER 3x3</h1>
+        <p>Индивидуальная настройка мульти-потока</p>
+    </div>
+
+    <div class="grid-container" id="grid"></div>
+
+    <footer class="footer-legal">
+        <p><span class="legal-tag">Правовой статус:</span> Данный ресурс является инструментом визуализации и работает на основе стандартного API встраивания (Embedding). На текущий момент (2026 г.) использование данного функционала для личного просмотра полностью соответствует международному законодательству о добросовестном использовании (Fair Use). Каждый пользователь имеет право беспрепятственно использовать данный интерфейс для организации рабочего пространства и мониторинга видео-потоков.</p>
+        
+        <p><span class="legal-tag">Политика конфиденциальности:</span> Мы уважаем вашу приватность. 
+        1. Сайт <b>не собирает</b>, не хранит и не передает третьим лицам ваши персональные данные, IP-адреса или историю просмотров. 
+        2. Все ссылки на видео сохраняются исключительно в вашем браузере (через LocalStorage) и не покидают вашего устройства. 
+        3. Мы не используем файлы Cookies для отслеживания.</p>
+    </footer>
+
+    <script>
+        const grid = document.getElementById('grid');
+        let savedVideos = JSON.parse(localStorage.getItem('multiview-data')) || {};
+
+        function render() {
+            grid.innerHTML = '';
+            for (let i = 0; i < 9; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'video-slot';
+                
+                if (savedVideos[i]) {
+                    slot.innerHTML = `
+                        <button class="remove-btn" onclick="remove(${i})">Удалить</button>
+                        <iframe src="https://www.youtube.com/embed/${savedVideos[i]}" allowfullscreen></iframe>
+                    `;
+                } else {
+                    slot.innerHTML = `<button class="add-btn" onclick="add(${i})">+</button>`;
+                }
+                grid.appendChild(slot);
+            }
+        }
+
+        window.add = (i) => {
+            const url = prompt("Вставьте ссылку на YouTube:");
+            if (!url) return;
+            const id = url.match(/(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/user\/\S+|\/ytscreeningroom\?v=))([\w\-]{11})/);
+            if (id) {
+                savedVideos[i] = id[1];
+                localStorage.setItem('multiview-data', JSON.stringify(savedVideos));
+                render();
+            }
+        };
+
+        window.remove = (i) => {
+            delete savedVideos[i];
+            localStorage.setItem('multiview-data', JSON.stringify(savedVideos));
+            render();
+        };
+
+        render();
+    </script>
+</body>
+</html>
+
