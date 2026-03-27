@@ -13,7 +13,7 @@
         }
 
         body {
-            background-color: white;
+            background-color: var(--bg-color); /* Исправил white на темный фон для стиля */
             color: var(--text);
             font-family: 'Inter', sans-serif;
             margin: 0;
@@ -24,7 +24,8 @@
 
         .header { margin: 20px 0; text-align: center; }
         .header h1 { color: var(--accent); letter-spacing: 3px; margin-bottom: 5px; }
-        .header p { font-size: 12px; color: #666; }
+        .header a { color: var(--accent); text-decoration: none; font-size: 14px; opacity: 0.7; }
+        .header a:hover { opacity: 1; }
 
         .grid-container {
             display: grid;
@@ -34,6 +35,143 @@
             height: 80vh;
             max-width: 1600px;
         }
+
+        .video-slot {
+            background: var(--card-bg);
+            border: 1px solid #222;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .add-btn {
+            background: none; border: 1px solid var(--accent);
+            color: var(--accent); font-size: 30px;
+            width: 60px; height: 60px; border-radius: 50%;
+            cursor: pointer; transition: 0.3s;
+        }
+
+        .add-btn:hover { background: var(--accent); color: black; }
+
+        iframe { width: 100%; height: 100%; border: none; }
+
+        /* Контейнер кнопок управления */
+        .controls {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            display: flex;
+            gap: 5px;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .video-slot:hover .controls { opacity: 1; }
+
+        .ctrl-btn {
+            border: none;
+            cursor: pointer;
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .remove-btn { background: rgba(220, 53, 69, 0.8); }
+        .change-btn { background: rgba(0, 123, 255, 0.8); }
+        .ctrl-btn:hover { transform: scale(1.05); }
+
+        .footer-legal {
+            margin-top: 40px;
+            padding: 20px;
+            max-width: 900px;
+            font-size: 13px;
+            color: #555;
+            border-top: 1px solid #222;
+            line-height: 1.6;
+            text-align: center;
+        }
+
+        .legal-tag { color: var(--accent); font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><a href="https://web3my.netlify.app">MY WEB3</a></h1>
+        <h1>VIEWER 3x3</h1>
+        <p>Индивидуальная настройка мульти-потока</p>
+    </div>
+
+    <div class="grid-container" id="grid"></div>
+
+    <footer class="footer-legal">
+        <p><span class="legal-tag">Правовой статус:</span> Данный ресурс является инструментом визуализации и работает на основе стандартного API встраивания. На текущий момент (2026 г.) использование данного функционала соответствует Fair Use.</p>
+        <p><span class="legal-tag">Политика конфиденциальности:</span> Данные хранятся локально в вашем браузере (LocalStorage).</p>
+    </footer>
+
+    <script>
+        const grid = document.getElementById('grid');
+        let savedVideos = JSON.parse(localStorage.getItem('multiview-data')) || {};
+
+        // Вспомогательная функция для получения ID видео
+        function getVideoId(url) {
+            const regex = /(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/user\/\S+|\/ytscreeningroom\?v=))([\w\-]{11})/;
+            const match = url.match(regex);
+            return match ? match[1] : null;
+        }
+
+        function render() {
+            grid.innerHTML = '';
+            for (let i = 0; i < 9; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'video-slot';
+                
+                if (savedVideos[i]) {
+                    slot.innerHTML = `
+                        <div class="controls">
+                            <button class="ctrl-btn change-btn" onclick="add(${i})" title="Сменить видео">🔄</button>
+                            <button class="ctrl-btn remove-btn" onclick="remove(${i})" title="Удалить">✕</button>
+                        </div>
+                        <iframe src="https://www.youtube.com/embed/${savedVideos[i]}" allowfullscreen></iframe>
+                    `;
+                } else {
+                    slot.innerHTML = `<button class="add-btn" onclick="add(${i})">+</button>`;
+                }
+                grid.appendChild(slot);
+            }
+        }
+
+        window.add = (i) => {
+            const currentVideo = savedVideos[i] ? ` (сейчас: ${savedVideos[i]})` : "";
+            const url = prompt("Вставьте новую ссылку на YouTube" + currentVideo + ":");
+            if (!url) return;
+            
+            const id = getVideoId(url);
+            if (id) {
+                savedVideos[i] = id[1] || id; // Берем ID
+                localStorage.setItem('multiview-data', JSON.stringify(savedVideos));
+                render();
+            } else {
+                alert("Неверная ссылка на YouTube");
+            }
+        };
+
+        window.remove = (i) => {
+            if(confirm("Удалить это видео?")) {
+                delete savedVideos[i];
+                localStorage.setItem('multiview-data', JSON.stringify(savedVideos));
+                render();
+            }
+        };
+
+        render();
+    </script>
+</body>
+</html>
 
         .video-slot {
             background: var(--card-bg);
