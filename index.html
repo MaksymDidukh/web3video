@@ -119,7 +119,94 @@ for (let i = 0; i < 9; i++) {
 
     grid.appendChild(cell);
 }
+
+    
+const grid = document.getElementById('grid');
+
+// создаём 9 ячеек
+for (let i = 0; i < 9; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+
+    const controls = document.createElement('div');
+    controls.className = 'controls';
+
+    const addBtn = document.createElement('button');
+    addBtn.textContent = '➕';
+
+    const replaceBtn = document.createElement('button');
+    replaceBtn.textContent = '🔄';
+
+    controls.appendChild(addBtn);
+    controls.appendChild(replaceBtn);
+
+    cell.appendChild(controls);
+
+    let iframe = null;
+
+    function getEmbed(url) {
+        try {
+            const u = new URL(url);
+            let id = '';
+
+            if (u.hostname.includes('youtu.be')) {
+                id = u.pathname.slice(1);
+            } else {
+                id = u.searchParams.get('v');
+            }
+
+            return `https://www.youtube.com/embed/${id}?autoplay=1&rel=0`;
+        } catch {
+            return null;
+        }
+    }
+
+    function setVideo(isReplace = false) {
+        const url = prompt("Вставь YouTube URL:");
+        if (!url) return;
+
+        const embed = getEmbed(url);
+        if (!embed) {
+            alert("Неверная ссылка");
+            return;
+        }
+
+        if (!iframe) {
+            // Создаём iframe только если его ещё нет
+            iframe = document.createElement('iframe');
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+            iframe.style.border = 'none';
+            cell.appendChild(iframe);
+        }
+
+        // 🔥 Главное исправление: всегда меняем src, даже если видео уже стоит
+        iframe.src = embed;
+
+        // Небольшая перезагрузка для надёжности (YouTube иногда кэширует)
+        setTimeout(() => {
+            iframe.src = embed;
+        }, 100);
+    }
+
+    // Кнопка ➕ — добавляет только если видео ещё нет
+    addBtn.onclick = () => {
+        if (!iframe) {
+            setVideo();
+        } else {
+            alert("Видео уже стоит. Используй 🔄 для замены");
+        }
+    };
+
+    // Кнопка 🔄 — всегда заменяет видео (даже если оно уже есть)
+    replaceBtn.onclick = () => {
+        setVideo(true);
+    };
+
+    grid.appendChild(cell);
+}
 </script>
+
 
 </body>
 </html>
