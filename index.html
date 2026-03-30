@@ -1,212 +1,161 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<title>YouTube Grid 3x3</title>
-<style>
-    body {
-        margin: 0;
-        background: #111;
-        color: white;
-        font-family: Arial;
-    }
-    .grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 5px;
-        padding: 5px;
-    }
-    .cell {
-        position: relative;
-        background: #000;
-        aspect-ratio: 16/9;
-    }
-    iframe {
-        width: 100%;
-        height: 100%;
-        border: none;
-    }
-    .controls {
-        position: absolute;
-        top: 5px;
-        right: 5px;
-        display: flex;
-        gap: 5px;
-    }
-    button {
-        background: rgba(0,0,0,0.7);
-        border: none;
-        color: white;
-        cursor: pointer;
-        padding: 5px;
-        font-size: 16px;
-    }
-    button:hover {
-        background: rgba(255,255,255,0.2);
-    }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>3x3 Fullscreen Wall</title>
+    <style>
+        /* Обнуляем все отступы, чтобы видео касались краев экрана */
+        * { box-sizing: border-box; }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            overflow: hidden; /* Убираем прокрутку, если всё влезло */
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Заголовок теперь накладывается поверх или занимает минимум места */
+        h3 {
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            margin: 0;
+            color: rgba(0, 191, 255, 0.5); /* Полупрозрачный, чтобы не мешал */
+            font-size: 12px;
+            z-index: 10;
+            pointer-events: none;
+            text-transform: uppercase;
+        }
+
+        /* Сетка на весь экран */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 2px; /* Минимальный зазор между видео */
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .item {
+            position: relative;
+            background: #0a0a0a;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            border: 1px solid #1a1a1a;
+        }
+
+        iframe {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            border: none;
+            z-index: 1;
+        }
+
+        /* Слой интерфейса */
+        .ui {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .btn {
+            pointer-events: auto;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: 0.2s;
+        }
+        .btn:hover { opacity: 1; transform: scale(1.1); }
+
+        .add-btn {
+            background: #28a745;
+            color: white;
+            padding: 12px 18px;
+            font-size: 10px;
+        }
+
+        .edit-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(255, 193, 7, 0.6);
+            color: #000;
+            padding: 5px 8px;
+            font-size: 14px;
+            z-index: 3;
+        }
+
+        .item.has-video .add-btn { display: none; }
+        
+        /* Скрываем кнопку "Изменить" и заголовок, если долго не двигать мышкой (опционально) */
+        .item.has-video:hover .edit-btn { opacity: 1; }
+    </style>
 </head>
 <body>
 
-<div class="grid" id="grid"></div>
+    <h3>3×3 VIDEO WALL</h3>
+    <div class="grid" id="gallery"></div>
 
-<script>
-const grid = document.getElementById('grid');
+    <script>
+        const gallery = document.getElementById('gallery');
+        let videos = JSON.parse(localStorage.getItem('yt_3x3_full')) || Array(9).fill(null);
 
-// создаём 9 ячеек
-for (let i = 0; i < 9; i++) {
-    const cell = document.createElement('div');
-    cell.className = 'cell';
+        function extractVideoID(input) {
+            if (!input) return null;
+            const standardMatch = input.match(/(?:v=|be\/|shorts\/|embed\/)([a-zA-Z0-9_-]{11})/);
+            if (standardMatch) return standardMatch[1];
+            const genericMatch = input.match(/[a-zA-Z0-9_-]{11}/);
+            return genericMatch ? genericMatch[0] : null;
+        }
 
-    const controls = document.createElement('div');
-    controls.className = 'controls';
+        function render() {
+            gallery.innerHTML = '';
+            videos.forEach((id, i) => {
+                const div = document.createElement('div');
+                div.className = 'item' + (id ? ' has-video' : '');
+                div.innerHTML = `
+                    ${id ? `<iframe src="https://www.youtube.com/embed/${id}?autoplay=0&rel=0" allowfullscreen></iframe>` : ''}
+                    <div class="ui"><button class="btn add-btn" onclick="ask(${i})">➕ ДОБАВИТЬ</button></div>
+                    ${id ? `<button class="btn edit-btn" onclick="ask(${i})">🔄</button>` : ''}
+                `;
+                gallery.appendChild(div);
+            });
+        }
 
-    const addBtn = document.createElement('button');
-    addBtn.textContent = '➕';
-
-    const replaceBtn = document.createElement('button');
-    replaceBtn.textContent = '🔄';
-
-    controls.appendChild(addBtn);
-    controls.appendChild(replaceBtn);
-
-    cell.appendChild(controls);
-
-    let iframe = null;
-
-    function getEmbed(url) {
-        try {
-            const u = new URL(url);
-            let id = '';
-
-            if (u.hostname.includes('youtu.be')) {
-                id = u.pathname.slice(1);
+        window.ask = function(i) {
+            let input = prompt("Вставь ссылку YouTube:");
+            if (input === null) return;
+            
+            if (input.trim() === "") {
+                videos[i] = null;
             } else {
-                id = u.searchParams.get('v');
+                const id = extractVideoID(input.trim());
+                if (id) {
+                    videos[i] = id;
+                } else {
+                    alert("ID не найден");
+                }
             }
+            localStorage.setItem('yt_3x3_full', JSON.stringify(videos));
+            render();
+        };
 
-            return `https://www.youtube.com/embed/${id}?autoplay=1`;
-        } catch {
-            return null;
-        }
-    }
-
-    function setVideo() {
-        const url = prompt("Вставь YouTube URL:");
-        if (!url) return;
-
-        const embed = getEmbed(url);
-        if (!embed) {
-            alert("Неверная ссылка");
-            return;
-        }
-
-        if (!iframe) {
-            iframe = document.createElement('iframe');
-            cell.appendChild(iframe);
-        }
-
-        iframe.src = embed;
-    }
-
-    addBtn.onclick = () => {
-        if (!iframe) setVideo();
-    };
-
-    replaceBtn.onclick = () => {
-        setVideo();
-    };
-
-    grid.appendChild(cell);
-}
-
-    
-const grid = document.getElementById('grid');
-
-// создаём 9 ячеек
-for (let i = 0; i < 9; i++) {
-    const cell = document.createElement('div');
-    cell.className = 'cell';
-
-    const controls = document.createElement('div');
-    controls.className = 'controls';
-
-    const addBtn = document.createElement('button');
-    addBtn.textContent = '➕';
-
-    const replaceBtn = document.createElement('button');
-    replaceBtn.textContent = '🔄';
-
-    controls.appendChild(addBtn);
-    controls.appendChild(replaceBtn);
-
-    cell.appendChild(controls);
-
-    let iframe = null;
-
-    function getEmbed(url) {
-        try {
-            const u = new URL(url);
-            let id = '';
-
-            if (u.hostname.includes('youtu.be')) {
-                id = u.pathname.slice(1);
-            } else {
-                id = u.searchParams.get('v');
-            }
-
-            return `https://www.youtube.com/embed/${id}?autoplay=1&rel=0`;
-        } catch {
-            return null;
-        }
-    }
-
-    function setVideo(isReplace = false) {
-        const url = prompt("Вставь YouTube URL:");
-        if (!url) return;
-
-        const embed = getEmbed(url);
-        if (!embed) {
-            alert("Неверная ссылка");
-            return;
-        }
-
-        if (!iframe) {
-            // Создаём iframe только если его ещё нет
-            iframe = document.createElement('iframe');
-            iframe.style.width = '100%';
-            iframe.style.height = '100%';
-            iframe.style.border = 'none';
-            cell.appendChild(iframe);
-        }
-
-        // 🔥 Главное исправление: всегда меняем src, даже если видео уже стоит
-        iframe.src = embed;
-
-        // Небольшая перезагрузка для надёжности (YouTube иногда кэширует)
-        setTimeout(() => {
-            iframe.src = embed;
-        }, 100);
-    }
-
-    // Кнопка ➕ — добавляет только если видео ещё нет
-    addBtn.onclick = () => {
-        if (!iframe) {
-            setVideo();
-        } else {
-            alert("Видео уже стоит. Используй 🔄 для замены");
-        }
-    };
-
-    // Кнопка 🔄 — всегда заменяет видео (даже если оно уже есть)
-    replaceBtn.onclick = () => {
-        setVideo(true);
-    };
-
-    grid.appendChild(cell);
-}
-</script>
-
-
+        render();
+    </script>
 </body>
 </html>
